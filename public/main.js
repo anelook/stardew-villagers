@@ -16,15 +16,15 @@ window.onload = function () {
     const villagerData = [
         { name: "Jodi", imagePath: "/assets/villagers/Jodi.png" },
         { name: "Lewis", imagePath: "/assets/villagers/Lewis.png" },
-        { name: "Linus", imagePath: "/assets/villagers/Linus.png" },
-        { name: "Marnie", imagePath: "/assets/villagers/Marnie.png" },
-        { name: "Maru", imagePath: "/assets/villagers/Maru.png" },
-        { name: "Pierre", imagePath: "/assets/villagers/Pierre.png" },
-        { name: "Robin", imagePath: "/assets/villagers/Robin.png" },
-        { name: "Sam", imagePath: "/assets/villagers/Sam.png" },
-        { name: "Sebastian", imagePath: "/assets/villagers/Sebastian.png" },
-        { name: "Shane", imagePath: "/assets/villagers/Shane.png" },
-        { name: "Snail", imagePath: "/assets/villagers/Snail.png" }
+        // { name: "Linus", imagePath: "/assets/villagers/Linus.png" },
+        // { name: "Marnie", imagePath: "/assets/villagers/Marnie.png" },
+        // { name: "Maru", imagePath: "/assets/villagers/Maru.png" },
+        // { name: "Pierre", imagePath: "/assets/villagers/Pierre.png" },
+        // { name: "Robin", imagePath: "/assets/villagers/Robin.png" },
+        // { name: "Sam", imagePath: "/assets/villagers/Sam.png" },
+        // { name: "Sebastian", imagePath: "/assets/villagers/Sebastian.png" },
+        // { name: "Shane", imagePath: "/assets/villagers/Shane.png" },
+        // { name: "Snail", imagePath: "/assets/villagers/Snail.png" }
     ];
 
     let villagers = [];
@@ -71,9 +71,11 @@ window.onload = function () {
                         if (!response.ok) {
                             throw new Error(`Could not load metadata for ${data.name}`);
                         }
+                        console.log("---- 1")
                         return response.json();
                     })
                     .then(metadata => {
+                        console.log("---- 2")
                         // Use the Utils helper function to generate a valid starting position.
                         const pos = window.Utils.generateValidPosition(
                             canvas.width,
@@ -89,6 +91,7 @@ window.onload = function () {
                         return new Villager(data.name, data.imagePath, pos.x, pos.y, metadata);
                     })
                     .catch(error => {
+                        console.log("---- 3")
                         console.error(error);
                         // Fallback: create the villager with empty metadata.
                         const pos = window.Utils.generateValidPosition(
@@ -105,6 +108,31 @@ window.onload = function () {
             )
         ).then(loadedVillagers => {
             villagers = loadedVillagers;
+            console.log("====== 4 loadedVillagers");
+            socket.on('villagersProximityIOEvent', ({ villager1: name1, villager2: name2, areClose }) => {
+                const v1 = villagers.find(v => v.name === name1);
+                const v2 = villagers.find(v => v.name === name2);
+
+                if (!v1 || !v2) {
+                    console.warn(`Villager not found: ${!v1 ? name1 : name2}`);
+                    return;
+                }
+                // make sure nextTo arrays exist
+                v1.nextTo = v1.nextTo || [];
+                v2.nextTo = v2.nextTo || [];
+
+                if (areClose) {
+                    // only add if not already next to each other
+                    if (!v1.nextTo.includes(v2)) v1.nextTo.push(v2);
+                    if (!v2.nextTo.includes(v1)) v2.nextTo.push(v1);
+                } else {
+                    // remove each from the other’s nextTo
+                    v1.nextTo = v1.nextTo.filter(v => v !== v2);
+                    v2.nextTo = v2.nextTo.filter(v => v !== v1);
+                }
+
+            });
+
             // Start the game loop once all villagers have been created.
             requestAnimationFrame(gameLoop);
         });
@@ -140,7 +168,7 @@ window.onload = function () {
 
         // Update and draw each villager.
         villagers.forEach(villager => {
-            villager.setNextMovement(deltaTime, canvas.width, canvas.height);
+            villager.update(deltaTime, canvas.width, canvas.height);
             drawVillagerOnCanvas(villager, context)
             // villager.drawOnCanvas(context);
         });

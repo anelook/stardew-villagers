@@ -22,22 +22,29 @@ const registry = new SchemaRegistry({
     }
 });
 
-const consumer = kafka.consumer({ groupId: 'villager-proximity-consumer' });
+const consumer = kafka.consumer({ groupId: 'villager-proximity-consumer-8' });
 
 async function initConsumer(io) {
     await consumer.connect();
     await consumer.subscribe({
-        topic: process.env.KAFKA_PROXIMITY_TOPIC || 'villagersProximity',
+        topic: process.env.KAFKA_PROXIMITY_TOPIC,
         fromBeginning: false
     });
 
     await consumer.run({
         eachMessage: async ({ message }) => {
             try {
-                // decode Avro‐encoded payload
-                const payload = await registry.decode(message.value);
-                // emit over socket.io to all connected clients
-                io.emit('villagersProximity', payload);
+                // decode Avro‐encoded key & value
+                const keyObj   = await registry.decode(message.key);
+                const valueObj = await registry.decode(message.value);
+
+                // merge them into one flat object
+                const merged = { ...keyObj, ...valueObj };
+
+
+                console.log("consumer => ", merged);
+
+                io.emit('villagersProximityIOEvent', merged);
             } catch (err) {
                 console.error('Failed to decode/process proximity message', err);
             }

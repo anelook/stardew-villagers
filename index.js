@@ -23,7 +23,7 @@ initProducer().catch(err => {
 });
 
 // connect to Kafka consumer (for proximity)
-initConsumer().catch(err => {
+initConsumer(io).catch(err => {
     console.error('Failed to initialize Kafka consumer', err);
     process.exit(1);
 });
