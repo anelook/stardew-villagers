@@ -4,6 +4,7 @@ const express = require('express');
 const http = require('http');
 const { initProducer, sendVillagerLocationUpdate } = require('./producer');
 const { initConsumer } = require('./consumer');
+// initi conversation producer and consumer
 const app = express();
 const server = http.createServer(app);
 const io = require('socket.io')(server);
@@ -31,6 +32,15 @@ initConsumer(io).catch(err => {
 // when any client connects via WebSocket...
 io.on('connection', socket => {
     console.log(`Client connected: ${socket.id}`);
+    // socket.on('villagerMessage', (msg) => {
+    //     console.log("villagerMessage", msg);
+    // })
+
+    socket.on('villagerMessage', msg => {
+        console.log('received villagerMessage on server:', msg);
+        // send to *all* clients (including sender) – or use socket.broadcast.emit to exclude sender
+        io.emit('villagerMessage', msg);
+    });
 
     // listen for villager updates
     socket.on('villagerLocationUpdated', async ({ name, x, y }) => {

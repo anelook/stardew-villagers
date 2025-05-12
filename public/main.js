@@ -108,7 +108,7 @@ window.onload = function () {
             )
         ).then(loadedVillagers => {
             villagers = loadedVillagers;
-            console.log("====== 4 loadedVillagers");
+            console.log("subscribe to villagersProximityIOEvent");
             socket.on('villagersProximityIOEvent', ({ villager1: name1, villager2: name2, areClose }) => {
                 const v1 = villagers.find(v => v.name === name1);
                 const v2 = villagers.find(v => v.name === name2);
@@ -140,14 +140,6 @@ window.onload = function () {
 
     let lastTimestamp = 0;
 
-    function drawVillagerOnCanvas(villager, context) {
-        const row = villager.direction;
-        const sx = villager.frameIndex * SPRITE_FRAME_WIDTH;
-        const sy = row * SPRITE_FRAME_HEIGHT;
-        context.drawImage(villager.img, sx, sy, SPRITE_FRAME_WIDTH, SPRITE_FRAME_HEIGHT, villager.x, villager.y, SPRITE_FRAME_WIDTH, SPRITE_FRAME_HEIGHT);
-
-    }
-
     function gameLoop(timestamp) {
         const deltaTime = timestamp - lastTimestamp;
         lastTimestamp = timestamp;
@@ -164,13 +156,38 @@ window.onload = function () {
             context.drawImage(mapImage, xOffset, 0, imageWidth, canvas.height);
             // Draw forbidden zones as red outlines.
             drawForbiddenZones(context, xOffset, scaleFactor);
+
+
+            // ─── INSERTED: draw proximity‐boxes ───
+            const rawRadius    = Math.sqrt(10024);           // ≃100.12 world units
+            const screenRadius = rawRadius * scaleFactor;     // px on screen
+            const side         = screenRadius * 2;
+
+            context.save();
+            context.strokeStyle = 'blue';
+            context.lineWidth   = 1;
+            context.setLineDash([5,5]);
+
+            villagers.forEach(v => {
+                // assume v.x/v.y are already in screen coords; if not, convert:
+                const sx = v.x;
+                const sy = v.y ;
+
+                context.strokeRect(
+                    sx - screenRadius,
+                    sy - screenRadius,
+                    side,
+                    side
+                );
+            });
+
+            context.restore();
+            // ────────────────────────────────────────────
         }
 
         // Update and draw each villager.
         villagers.forEach(villager => {
-            villager.update(deltaTime, canvas.width, canvas.height);
-            drawVillagerOnCanvas(villager, context)
-            // villager.drawOnCanvas(context);
+            villager.update(deltaTime, canvas.width, canvas.height, context);
         });
 
         requestAnimationFrame(gameLoop);

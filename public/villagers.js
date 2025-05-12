@@ -18,28 +18,58 @@ class Villager {
         this.img.src     = imagePath;
         this.x           = x;
         this.y           = y;
-        this.metadata    = metadata;
-        this.nextTo      = [];
-
         this.speed       = VILLAGER_SPEED;
         this.frameIndex  = 0;
         this.frameTimer  = 0;
         this.frameInterval = FRAME_INTERVAL;
 
         this._lastKafkaSend = -Infinity;
-        this._kafkaInterval = 3000; // ms
+        this._kafkaInterval = 1000; // ms
+
+        this.metadata    = metadata;
+        this.nextTo      = [];
+        
+        this.inConversation = false;
 
         this._initMovement();
+
+        // this.inbox = [];              // all incoming msgs
+        // this._conversations = {};     // track state per partner
+
+        // subscribe once to “villagerMessage” topic:
+        console.log("subscribe to villagerMessage");
+        // window.socket.on('villagerMessage', msg => this._listen(msg));
+        socket.on('villagerMessage', (msg) => {
+            // console.log("villagerMessage", msg);
+            this._listen(msg)
+        })
+
+        
+        
     }
 
     // ——— Public API ———
 
+    // speak() {
+    //     this._handleSpeaking();
+    // }
     /**
      * Call once per tick.
      */
-    update(deltaTime, canvasWidth, canvasHeight) {
-        if (this._isSpeaking()) {
-            this._handleSpeaking();
+    update(deltaTime, canvasWidth, canvasHeight, context) {
+        //able to start or already in an ongoing conversation
+        if (this._isNearSomeone()) {
+            //continue drawing the character on map
+            this._drawVillagerOnCanvas(context);
+
+            // but stop any movement and focus on speaking
+            if(this.inConversation) {
+                return;
+            }
+
+
+            this._startConversation();
+
             return;
         }
 
@@ -52,22 +82,32 @@ class Villager {
         } else if (this.movementState === 'paused') { // paused
             this._handlePaused(deltaTime);
         }
-
+        this._drawVillagerOnCanvas(context);
         this._throttledKafkaEmit();
     }
 
     sendVillagerLocationToKafka() {
-        if (window.socket && this.movementState === 'moving') {
-            window.socket.emit('villagerLocationUpdated', {
+        // if (window.socket && this.movementState === 'moving') {
+            socket.emit('villagerLocationUpdated', {
                 name: this.name,
                 x: this.x,
                 y: this.y
             });
-        }
+        // }
     }
 
 
+
+
     // ——— Internal Helpers ———
+
+    _drawVillagerOnCanvas(context) {
+        const row = this.direction;
+        const sx = this.frameIndex * SPRITE_FRAME_WIDTH;
+        const sy = row * SPRITE_FRAME_HEIGHT;
+        context.drawImage(this.img, sx, sy, SPRITE_FRAME_WIDTH, SPRITE_FRAME_HEIGHT, this.x, this.y, SPRITE_FRAME_WIDTH, SPRITE_FRAME_HEIGHT);
+
+    }
 
     _initMovement() {
         this.movementState      = 'moving'; // moving | paused | speaking
@@ -75,19 +115,10 @@ class Villager {
         this.direction          = this._randomDirection();
     }
 
-    _isSpeaking() {
+    _isNearSomeone() {
         return this.nextTo.length > 0;
     }
 
-    _handleSpeaking() {
-        if (this.movementState !== 'speaking') {
-            // initiate speaking
-            console.log(`${this.name} → starts speaking to ${this.nextTo[0].name}`);
-            this.movementState = 'speaking';
-            this._resetAnimation();
-        }
-        // TODO: add talking animation here
-    }
 
     _shouldResumeMovement() {
         return this.movementState === 'speaking' && this.nextTo.length === 0;
@@ -204,4 +235,87 @@ class Villager {
         if (this.x > maxX)            { this.x = maxX; this.direction = 3; }
         if (this.y > maxY)            { this.y = maxY; this.direction = 2; }
     }
+
+    _listen({ from, to, message }) {
+        console.log("_listen", from, to, message);
+        if (to === this.name) {
+            // this.inbox.push({ from, message });
+
+            console.log("got message from ", from, message);
+        }
+    }
+    
+    _startConversation() {
+        this.inConversation = true;
+        const partner = this.nextTo[0];
+        if (!partner) {
+            console.log("suspicious - no conversation partner ")
+        }
+
+        if (this.name < partner.name) {
+            // give prio by name
+            this._talk(partner.name, "hi!");
+        }
+
+    }
+
+    _talk(to, message) {
+        console.log("_sendMessage 1")
+        // if (window.socket) {
+            console.log("_sendMessage from", this.name)
+            socket.emit('villagerMessage', {
+                from: this.name,
+                to,
+                message
+            });
+        // }
+    }
+    
+    // ——— Speaking / conversation logic ———
+    // _handleSpeaking() {
+    //     const partner = this.nextTo[0];
+    //     if (!partner) return;
+    //
+    //     console.log(this.name, " _handleSpeaking with ", this.nextTo[0])
+    //     // 1) first tick of this conversation?
+    //     if (!this._conversations[partner]) {
+    //         this._conversations[partner] = { stage: 0 };
+    //         this._sendGreeting(partner);
+    //         return;
+    //     }
+    //
+    //     // 2) process any incoming messages
+    //     while (this.inbox.length) {
+    //         console.log("inbox is not empty:  this.inbox.length:", this.inbox.length);
+    //         const { from, message } = this.inbox.shift();
+    //         this._sendReply(from, message);
+    //     }
+    //
+    //     // (optionally) after N turns you could end the conversation:
+    //     // if (++this._conversations[partner].stage >= MAX_TURNS) {
+    //     //   delete this._conversations[partner];
+    //     //   this._endSpeaking();
+    //     // }
+    // }
+
+    // _sendGreeting(to) {
+    //     const text = `Hi ${to}, how are you?`;
+    //     this._sendMessage(to, text);
+    //     this._conversations[to].stage = 1;
+    // }
+    //
+    // _sendReply(to, incoming) {
+    //     // placeholder “AI” logic – just echo back for now
+    //     const reply = `You said “${incoming}”. That’s interesting!`;
+    //     this._sendMessage(to, reply);
+    //     this._conversations[to].stage++;
+    // }
+    //
+    // // (optional) clear state & exit speaking
+    // _endSpeaking() {
+    //     this.movementState = 'moving';
+    //     delete this._conversations[this.nextTo[0]];
+    //     this.nextTo = [];
+    //     // reset timers, animations…
+    // }
 }

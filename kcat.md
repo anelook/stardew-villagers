@@ -1,0 +1,12 @@
+kcat -C \
+-b "$KAFKA_BROKER" \
+-X security.protocol=SASL_SSL \
+-X sasl.mechanisms=PLAIN \
+-X sasl.username="$KAFKA_USERNAME" \
+-X sasl.password="$KAFKA_PASSWORD" \
+-t "$KAFKA_PROXIMITY_TOPIC" \
+-o beginning \
+-r "https://$SCHEMA_REGISTRY_API_KEY:$SCHEMA_REGISTRY_API_SECRET@$SCHEMA_REGISTRY_URL" \
+-s key=avro \
+-s value=avro \
+-o beginning

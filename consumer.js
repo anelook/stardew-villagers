@@ -22,7 +22,15 @@ const registry = new SchemaRegistry({
     }
 });
 
-const consumer = kafka.consumer({ groupId: 'villager-proximity-consumer-8' });
+const consumer = kafka.consumer({
+    readUncommitted: true,
+    groupId: 'villager-proximity-consumer-8',
+    // Don’t wait long if there’s only a little data:
+    minBytes: 1,            // default is 1, ensures it returns on any data
+    maxWaitTimeInMs: 100,   // instead of 5000ms, wait at most 100 ms
+    // Optionally cap the total bytes fetched per request
+    maxBytes: 1048576       // e.g. 1 MB max per fetch (default 10 MB)
+});
 
 async function initConsumer(io) {
     await consumer.connect();
@@ -32,7 +40,7 @@ async function initConsumer(io) {
     });
 
     await consumer.run({
-        eachMessage: async ({ message }) => {
+        eachMessage: async ({ topic, partition, message }) => {
             try {
                 // decode Avro‐encoded key & value
                 const keyObj   = await registry.decode(message.key);
@@ -40,9 +48,10 @@ async function initConsumer(io) {
 
                 // merge them into one flat object
                 const merged = { ...keyObj, ...valueObj };
+                // console.log("=====> message.offset: ", message.offset);
 
 
-                console.log("consumer => ", merged);
+                console.log("consumer ====> ", merged);
 
                 io.emit('villagersProximityIOEvent', merged);
             } catch (err) {

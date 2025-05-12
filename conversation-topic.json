@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "ConversationMessage",
+  "namespace": "stardew",
+  "fields": [
+    {
+      "name": "from",
+      "type": "string"
+    },
+    {
+      "name": "to",
+      "type": "string"
+    },
+    {
+      "name": "message",
+      "type": "string"
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}
