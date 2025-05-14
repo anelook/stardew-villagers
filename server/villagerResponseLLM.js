@@ -42,7 +42,7 @@ Keep it short, friendly, and in character.
 
     const input = "What would you say next to them? Keep it short, friendly, and in character.";
 
-    return "1111";
+    return `Message from ${name} to ${partnerName}. ${Date.now()}`;
     // const response = await client.responses.create({
     //     model: "gpt-3.5-turbo",
     //     instructions,

@@ -36,14 +36,9 @@ class Villager {
 
         this._initMovement();
 
-        // this.inbox = [];              // all incoming msgs
-        // this._conversations = {};     // track state per partner
-
         // subscribe once to “villagerMessage” topic:
-        console.log("subscribe to villagerMessage");
-        // window.socket.on('villagerMessage', msg => this._listen(msg));
         socket.on('villagerMessage', (msg) => {
-            // console.log("villagerMessage", msg);
+            console.log("villagerMessage", msg);
             this._listen(msg)
         })
 
@@ -117,7 +112,6 @@ class Villager {
             // give prio by name
             this._sendFirstPhrase(partner.name, "hi!");
         }
-
     }
 
     _sendFirstPhrase(to) {
@@ -136,11 +130,6 @@ class Villager {
         const partner = this.nextTo[0];
         if (!partner) return;
 
-        // record incoming
-        this.ongoingConversation.push(
-            `${partner.name} said to me: ${heard_message}`
-        );
-
         // fire off to your server
         let reply;
         try {
@@ -158,106 +147,27 @@ class Villager {
             });
             const { reply: text } = await res.json();
             reply = text;
+
         } catch (err) {
             console.error("fetch error", err);
             reply = "Umm… I’m not sure what to say.";
         }
-        //
-        // // record & emit
-        // this.ongoingConversation.push(`${this.name} said to ${to}: ${reply}`);
-        // socket.emit("villagerMessage", {
-        //     from: this.name,
-        //     to,
-        //     message: reply
-        // });
+
+        this.currentMessage = reply;
+        this.ongoingConversation.push(`I said to ${to}: ${reply}`);
+
+        setTimeout(() => {
+            console.log('5 seconds later');
+            socket.emit('villagerMessage', {
+                from: this.name,
+                to,
+                message: reply
+            });
+            this.currentMessage = null;
+            // …anything you want to do after the pause…
+        }, 5000);
     }
 
-    // _reply(to, heard_message) {
-    //
-    //     const otherPerson = this.nextTo[0];
-    //     const prompt = `
-    //     Your are ${this.name}. You're talking to ${to}.
-    //     This is conversation so far: ${this.ongoingConversation.join(" | ")}
-    //     Some background about you,${this.name} :  ${this.metadata.background}.
-    //     You love: ${this.metadata.loves}.
-    //
-    //     Now, some background about the person you talk to, ${otherPerson.name},  ${otherPerson.metadata.background}:
-    //     `;
-    //
-    //     console.log("prompt", prompt)
-    //
-    //     const message = `I heard you said ${heard_message}!`
-    //     this.ongoingConversation.push(`I said to ${to}: ${message}`);
-    //     this.currentMessage = `Hi, my name is ${this.name}`;
-    //     // this._drawSpeechBubble(this.context, this.currentMessage);
-    //
-    //     // give a bit of time for us to read the message
-    //     setTimeout(() => {
-    //         console.log('1 second later', this.metadata);
-    //         console.log("_reply from", this.name)
-    //         socket.emit('villagerMessage', {
-    //             from: this.name,
-    //             to,
-    //             message
-    //         });
-    //         this.currentMessage = null;
-    //         // …anything you want to do after the pause…
-    //     }, 2000);
-    //
-    //
-    // }
-
-    // async _reply(to, heard_message) {
-    //     const partner = this.nextTo[0];
-    //     if (!partner) return;
-    //
-    //     // record the incoming bit
-    //     this.ongoingConversation.push(`${partner.name} said to me: ${heard_message}`);
-    //
-    //     try {
-    //         // get a response from the LLM
-    //         const reply = await generateVillagerReply({
-    //             name: this.name,
-    //             metadata: this.metadata,
-    //             partnerName: partner.name,
-    //             partnerMetadata: partner.metadata,
-    //             history: this.ongoingConversation,
-    //             heardMessage: heard_message
-    //         });
-    //
-    //         // record and emit
-    //         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
-    //         this._drawSpeechBubble(this.context, `Hi, my name is ${this.currentMessage}`);
-    //
-    //         setTimeout(() => {
-    //             console.log('1 second later', this.metadata);
-    //             console.log("_reply from", this.name)
-    //             socket.emit("villagerMessage", {
-    //                 from: this.name,
-    //                 to,
-    //                 message: reply
-    //             });
-    //             this.currentMessage = null;
-    //             // …anything you want to do after the pause…
-    //         }, 2000);
-    //
-    //
-    //
-    //     } catch (err) {
-    //         console.error("LLM error:", err);
-    //         // fallback to a safe default
-    //         const fallback = "Sorry, I’m not sure what to say!";
-    //         socket.emit("villagerMessage", {
-    //             from: this.name,
-    //             to,
-    //             message: fallback
-    //         });
-    //     }
-    // }
-
-
-
-    // ——— Internal Helpers ———
 
     _drawSpeechBubble(context, message) {
         const padding    = 8;               // space between text and box edge
