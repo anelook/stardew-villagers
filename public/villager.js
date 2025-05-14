@@ -34,11 +34,17 @@ class Villager {
         this.inConversation = false;
         this.ongoingConversation = [];
 
+        // how many ms to wait between conversations:
+        this._conversationCooldown = 30000;
+        this.maxMessagesPerConversation = 4;
+        // when was the last conversation ended?
+        this._lastConversationEnd = 0;
+
         this._initMovement();
 
         // subscribe once to “villagerMessage” topic:
         socket.on('villagerMessage', (msg) => {
-            console.log("villagerMessage", msg);
+            // console.log("villagerMessage", msg);
             this._listen(msg)
         })
 
@@ -50,10 +56,25 @@ class Villager {
      * Call once per tick.
      */
     update(deltaTime, canvasWidth, canvasHeight, context) {
-        //able to start or already in an ongoing conversation
         if(this.inConversation && !this._isNearSomeone()) {
-            // end conversation
+            // end accidental conversation trigger, where the villagers are actually apart
             this.inConversation = false;
+            console.log(this.name, "in conversation but not near anyone");
+        }
+
+        if (this._isNearSomeone() && this.inConversation && this.ongoingConversation.length > this.maxMessagesPerConversation) {
+            // finish conversation
+            this._finishConversation();
+
+            this.inConversation = false;
+            this.ongoingConversation = [];
+            this._lastConversationEnd = Date.now();
+            this._handleResumeMovement();
+
+            this._handleMoving(deltaTime, canvasWidth, canvasHeight);
+
+            console.log(this.name, "this.ongoingConversation.length", this.ongoingConversation.length);
+            return;
         }
 
         if (this._isNearSomeone() ) {
@@ -61,9 +82,36 @@ class Villager {
             this._drawVillagerOnCanvas(context);
 
             // but stop any movement and focus on speaking
-            if(this.inConversation) {
+            if (this.inConversation) {
                 return;
             }
+
+
+            // if we’re still in the cooldown window, don’t re-start
+            if ( Date.now() - this._lastConversationEnd < this._conversationCooldown ) {
+                // console.log(this.name, "cooldown");
+                // console.log("this._lastConversationEnd", this._lastConversationEnd);
+
+                if (this._shouldResumeMovement()) {
+                    this._handleResumeMovement();
+                }
+
+                if (this.movementState === 'moving') {
+                    this._handleMoving(deltaTime, canvasWidth, canvasHeight);
+                } else if (this.movementState === 'paused') { // paused
+                    this._handlePaused(deltaTime);
+                }
+                this._drawVillagerOnCanvas(context);
+                this._throttledKafkaEmit();
+
+
+
+                return;
+            }
+
+            // console.log("this._lastConversationEnd", this._lastConversationEnd);
+            console.log(this.name, "start conversation");
+            // console.debug();
             this._startConversation();
 
             return;
@@ -93,9 +141,9 @@ class Villager {
 
     // Conversations
     _listen({ from, to, message }) {
-        console.log("_listen", from, to, message);
+        // console.log("_listen", from, to, message);
         if (to === this.name) {
-            console.log("got message from ", from, message);
+            // console.log("got message from ", from, message);
             this.ongoingConversation.push(`${from} said to me: ${message}`);
             this._reply(from, message);
         }
@@ -110,12 +158,13 @@ class Villager {
 
         if (this.name < partner.name) {
             // give prio by name
+            console.log(this.name, "Sends first message")
             this._sendFirstPhrase(partner.name, "hi!");
         }
     }
 
     _sendFirstPhrase(to) {
-        console.log("_sendFirstPhrase from", this.name)
+        // console.log("_sendFirstPhrase from", this.name)
         // this._drawSpeechBubble(this.context, `Hi, my name is ${this.name}`);
         socket.emit('villagerMessage', {
             from: this.name,
@@ -123,6 +172,19 @@ class Villager {
             message: "Hi!"
         });
         this.ongoingConversation.push(`I said to ${to}: Hi!`);
+
+    }
+
+    _finishConversation() {
+        console.log(this.name, "_finishConversation");
+        // this.
+        // send data from this.ongoingConversation to llm for summary
+        // get vector data
+        // and store response in opensearch
+        // await fetch("/api/villager/concludeConversation", {
+        // this.inConversation = false;
+        // this.ongoingConversation = [];
+        // this._handleResumeMovement()
 
     }
 
@@ -157,7 +219,7 @@ class Villager {
         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
 
         setTimeout(() => {
-            console.log('5 seconds later');
+            console.log(this.name, '5 seconds later');
             socket.emit('villagerMessage', {
                 from: this.name,
                 to,
