@@ -1,6 +1,6 @@
 // server/routes/villager.js
 const express = require('express');
-const { generateVillagerReply } = require('../openaiClient');
+const { generateVillagerReply } = require('../villagerResponseLLM');
 
 const router = express.Router();
 

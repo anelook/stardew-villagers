@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const http = require('http');
 const { initProducer, sendVillagerLocationUpdate } = require('./server/movementProducer');
-const villagerRoutes = require('./server/routes/villager');
+const villagerRoutes = require('./server/routes/reply');
 const { initConsumer } = require('./server/proximityConsumer');
 // initi conversation producer and consumer
 const app = express();
