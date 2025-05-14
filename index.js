@@ -2,9 +2,9 @@
 const path = require('path');
 const express = require('express');
 const http = require('http');
-const { initProducer, sendVillagerLocationUpdate } = require('./producer');
-const villagerRoutes = require('./routes/villager');
-const { initConsumer } = require('./consumer');
+const { initProducer, sendVillagerLocationUpdate } = require('./server/producer');
+const villagerRoutes = require('./server/routes/villager');
+const { initConsumer } = require('./server/consumer');
 // initi conversation producer and consumer
 const app = express();
 const server = http.createServer(app);
