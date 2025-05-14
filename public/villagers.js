@@ -11,6 +11,8 @@ const {
     NO_GO_ZONES
 } = window.CONFIG;
 
+// import { generateVillagerReply } from "./openaiClient.js";
+
 class Villager {
     constructor(name, imagePath, x, y, metadata = {}) {
         this.name        = name;
@@ -45,8 +47,6 @@ class Villager {
             this._listen(msg)
         })
 
-        
-        
     }
 
     // ——— Public API ———
@@ -97,7 +97,6 @@ class Villager {
 
 
     // Conversations
-
     _listen({ from, to, message }) {
         console.log("_listen", from, to, message);
         if (to === this.name) {
@@ -123,62 +122,182 @@ class Villager {
 
     _sendFirstPhrase(to) {
         console.log("_sendFirstPhrase from", this.name)
+        // this._drawSpeechBubble(this.context, `Hi, my name is ${this.name}`);
         socket.emit('villagerMessage', {
             from: this.name,
             to,
             message: "Hi!"
         });
         this.ongoingConversation.push(`I said to ${to}: Hi!`);
+
     }
 
-    _reply(to, heard_message) {
+    async _reply(to, heard_message) {
+        const partner = this.nextTo[0];
+        if (!partner) return;
 
-        const otherPerson = this.nextTo[0];
-        const prompt = `
-        Your are ${this.name}. You're talking to ${to}. 
-        This is conversation so far: ${this.ongoingConversation.join(" | ")}
-        Some background about you,${this.name} :  ${this.metadata.background}.
-        You love: ${this.metadata.loves}.
-        
-        Now, some background about the person you talk to, ${otherPerson.name},  ${otherPerson.metadata.background}: 
-        `;
+        // record incoming
+        this.ongoingConversation.push(
+            `${partner.name} said to me: ${heard_message}`
+        );
 
-        console.log("prompt", prompt)
-
-        const message = `I heard you said ${heard_message}!`
-        this.ongoingConversation.push(`I said to ${to}: ${message}`);
-        this.currentMessage = message;
-
-        // give a bit of time for us to read the message
-        setTimeout(() => {
-            console.log('1 second later', this.metadata);
-            console.log("_reply from", this.name)
-            socket.emit('villagerMessage', {
-                from: this.name,
-                to,
-                message
+        // fire off to your server
+        let reply;
+        try {
+            const res = await fetch("/api/villager/reply", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: this.name,
+                    metadata: this.metadata,
+                    partnerName: partner.name,
+                    partnerMetadata: partner.metadata,
+                    history: this.ongoingConversation,
+                    heardMessage: heard_message
+                })
             });
-            this.currentMessage = null;
-            // …anything you want to do after the pause…
-        }, 10000);
-
-
+            const { reply: text } = await res.json();
+            reply = text;
+        } catch (err) {
+            console.error("fetch error", err);
+            reply = "Umm… I’m not sure what to say.";
+        }
+        //
+        // // record & emit
+        // this.ongoingConversation.push(`${this.name} said to ${to}: ${reply}`);
+        // socket.emit("villagerMessage", {
+        //     from: this.name,
+        //     to,
+        //     message: reply
+        // });
     }
+
+    // _reply(to, heard_message) {
+    //
+    //     const otherPerson = this.nextTo[0];
+    //     const prompt = `
+    //     Your are ${this.name}. You're talking to ${to}.
+    //     This is conversation so far: ${this.ongoingConversation.join(" | ")}
+    //     Some background about you,${this.name} :  ${this.metadata.background}.
+    //     You love: ${this.metadata.loves}.
+    //
+    //     Now, some background about the person you talk to, ${otherPerson.name},  ${otherPerson.metadata.background}:
+    //     `;
+    //
+    //     console.log("prompt", prompt)
+    //
+    //     const message = `I heard you said ${heard_message}!`
+    //     this.ongoingConversation.push(`I said to ${to}: ${message}`);
+    //     this.currentMessage = `Hi, my name is ${this.name}`;
+    //     // this._drawSpeechBubble(this.context, this.currentMessage);
+    //
+    //     // give a bit of time for us to read the message
+    //     setTimeout(() => {
+    //         console.log('1 second later', this.metadata);
+    //         console.log("_reply from", this.name)
+    //         socket.emit('villagerMessage', {
+    //             from: this.name,
+    //             to,
+    //             message
+    //         });
+    //         this.currentMessage = null;
+    //         // …anything you want to do after the pause…
+    //     }, 2000);
+    //
+    //
+    // }
+
+    // async _reply(to, heard_message) {
+    //     const partner = this.nextTo[0];
+    //     if (!partner) return;
+    //
+    //     // record the incoming bit
+    //     this.ongoingConversation.push(`${partner.name} said to me: ${heard_message}`);
+    //
+    //     try {
+    //         // get a response from the LLM
+    //         const reply = await generateVillagerReply({
+    //             name: this.name,
+    //             metadata: this.metadata,
+    //             partnerName: partner.name,
+    //             partnerMetadata: partner.metadata,
+    //             history: this.ongoingConversation,
+    //             heardMessage: heard_message
+    //         });
+    //
+    //         // record and emit
+    //         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
+    //         this._drawSpeechBubble(this.context, `Hi, my name is ${this.currentMessage}`);
+    //
+    //         setTimeout(() => {
+    //             console.log('1 second later', this.metadata);
+    //             console.log("_reply from", this.name)
+    //             socket.emit("villagerMessage", {
+    //                 from: this.name,
+    //                 to,
+    //                 message: reply
+    //             });
+    //             this.currentMessage = null;
+    //             // …anything you want to do after the pause…
+    //         }, 2000);
+    //
+    //
+    //
+    //     } catch (err) {
+    //         console.error("LLM error:", err);
+    //         // fallback to a safe default
+    //         const fallback = "Sorry, I’m not sure what to say!";
+    //         socket.emit("villagerMessage", {
+    //             from: this.name,
+    //             to,
+    //             message: fallback
+    //         });
+    //     }
+    // }
 
 
 
     // ——— Internal Helpers ———
 
     _drawSpeechBubble(context, message) {
-        const padding = 8;               // space between text and box edge
-        const lineHeight = 18;           // px between text lines
-        const maxWidth = 150;            // max text width before wrapping
-        context.font = `${lineHeight - 4}px Arial`;
+        const padding    = 8;               // space between text and box edge
+        const lineHeight = 18;              // px between text lines
+        const maxWidth   = 150;             // max text width before wrapping
+        const charSpeed  = 50;              // ms per character
 
-        // 1) wrap text into lines that fit maxWidth
-        const words = message.split(' ');
-        const lines = [];
-        let currentLine = words[0];
+        // ——— speech-animation state ———
+        if (!this._speechAnim || this._speechAnim.fullMessage !== message) {
+            // new message: reset animation
+            this._speechAnim = {
+                fullMessage: message,
+                charIndex:   0,
+                timer:       0,
+                lastTime:    performance.now(),
+                interval:    charSpeed
+            };
+        }
+        // advance timer
+        const now     = performance.now();
+        const elapsed = now - this._speechAnim.lastTime;
+        this._speechAnim.lastTime = now;
+        this._speechAnim.timer   += elapsed;
+
+        // consume intervals
+        while (this._speechAnim.timer >= this._speechAnim.interval) {
+            this._speechAnim.timer -= this._speechAnim.interval;
+            if (this._speechAnim.charIndex < message.length) {
+                this._speechAnim.charIndex++;
+            }
+        }
+
+        // substring to draw
+        const displayText = message.slice(0, this._speechAnim.charIndex);
+
+        // ——— wrap displayText into lines ———
+        context.font = `${lineHeight - 4}px Arial`;
+        const words       = displayText.split(' ');
+        const lines       = [];
+        let currentLine   = words[0] || '';
 
         for (let i = 1; i < words.length; i++) {
             const word = words[i];
@@ -190,44 +309,42 @@ class Villager {
                 currentLine = word;
             }
         }
-        lines.push(currentLine);
+        if (currentLine) lines.push(currentLine);
 
-        // 2) compute box dimensions
+        // ——— compute box size & position ———
         const textWidths = lines.map(l => context.measureText(l).width);
-        const boxWidth = Math.max(...textWidths) + padding * 2;
-        const boxHeight = lines.length * lineHeight + padding * 2;
-
-        // 3) position the box above the villager sprite
+        const boxWidth   = Math.max(...textWidths, 0) + padding * 2;
+        const boxHeight  = lines.length * lineHeight + padding * 2;
         let boxX = this.x + (SPRITE_FRAME_WIDTH - boxWidth) / 2;
-        let boxY = this.y - boxHeight - 12;  // 12px gap + tail
-
-        // optional: clamp so it never goes off‐canvas
+        let boxY = this.y - boxHeight - 12;
         boxX = Math.max(4, Math.min(boxX, context.canvas.width - boxWidth - 4));
         boxY = Math.max(4, boxY);
 
-        // 4) draw bubble rectangle
-        context.fillStyle = 'white';
+        // ——— draw bubble ———
+        context.fillStyle   = 'white';
         context.strokeStyle = 'black';
-        context.lineWidth = 2;
+        context.lineWidth   = 2;
         context.beginPath();
-        context.roundRect
-            ? context.roundRect(boxX, boxY, boxWidth, boxHeight, 6)  // if supported
-            : context.rect(boxX, boxY, boxWidth, boxHeight);
+        if (context.roundRect) {
+            context.roundRect(boxX, boxY, boxWidth, boxHeight, 6);
+        } else {
+            context.rect(boxX, boxY, boxWidth, boxHeight);
+        }
         context.fill();
         context.stroke();
 
-        // 5) draw little “tail” pointing at villager
+        // ——— draw tail ———
         const tailX = this.x + SPRITE_FRAME_WIDTH / 2;
         const tailY = this.y;
         context.beginPath();
         context.moveTo(tailX - 6, boxY + boxHeight);
         context.lineTo(tailX + 6, boxY + boxHeight);
-        context.lineTo(tailX, tailY - 2);
+        context.lineTo(tailX,     tailY - 2);
         context.closePath();
         context.fill();
         context.stroke();
 
-        // 6) render each line of text
+        // ——— draw text lines ———
         context.fillStyle = 'black';
         lines.forEach((line, i) => {
             const textX = boxX + padding;
@@ -237,6 +354,7 @@ class Villager {
     }
 
 
+
     _drawVillagerOnCanvas(context) {
         const row = this.direction;
         const sx = this.frameIndex * SPRITE_FRAME_WIDTH;
@@ -244,10 +362,8 @@ class Villager {
         context.drawImage(this.img, sx, sy, SPRITE_FRAME_WIDTH, SPRITE_FRAME_HEIGHT, this.x, this.y, SPRITE_FRAME_WIDTH, SPRITE_FRAME_HEIGHT);
 
         if(this.currentMessage) {
-            this._drawSpeechBubble(context, `Hi, my name is ${this.currentMessage}`);
+            this._drawSpeechBubble(context, this.currentMessage)
         }
-
-
     }
 
     _initMovement() {

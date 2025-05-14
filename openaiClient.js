@@ -1,5 +1,7 @@
 // openaiClient.js
-import OpenAI from 'openai';
+require('dotenv').config();
+
+const OpenAI = require('openai');
 
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY, // This is the default and can be omitted
@@ -17,7 +19,7 @@ const client = new OpenAI({
  * @param {string}   opts.heardMessage     The last message you want to respond to
  * @returns {Promise<string>}              The villager’s generated reply
  */
-export async function generateVillagerReply({
+async function generateVillagerReply({
                                                 name,
                                                 metadata,
                                                 partnerName,
@@ -40,14 +42,18 @@ Keep it short, friendly, and in character.
 
     const input = "What would you say next to them? Keep it short, friendly, and in character.";
 
-    const response = await client.responses.create({
-        model: "gpt-3.5-turbo",
-        instructions,
-        input
-        // max_tokens: 100,
-        // temperature: 0.8
-    });
-
-    console.log({response});
-    return response.output_text;
+    return "1111";
+    // const response = await client.responses.create({
+    //     model: "gpt-3.5-turbo",
+    //     instructions,
+    //     input
+    //     // max_tokens: 100,
+    //     // temperature: 0.8
+    // });
+    //
+    // console.log({response});
+    // return response.output_text;
 }
+
+
+module.exports = { generateVillagerReply };
