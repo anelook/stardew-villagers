@@ -35,10 +35,10 @@ class Villager {
         this.ongoingConversation = [];
 
         // how many ms to wait between conversations:
-        this._conversationCooldown = 30000;
+        this._conversationCooldown = 20000;//(Math.random() * (40 - 10) + 10) * 1000;
         this.maxMessagesPerConversation = 4;
         // when was the last conversation ended?
-        this._lastConversationEnd = 0;
+        this._lastConversationEnd = Date.now(); //prevent conversations during first 30 sec
 
         this._initMovement();
 
@@ -55,80 +55,89 @@ class Villager {
     /**
      * Call once per tick.
      */
+
+
     update(deltaTime, canvasWidth, canvasHeight, context) {
-        if(this.inConversation && !this._isNearSomeone()) {
-            // end accidental conversation trigger, where the villagers are actually apart
+        this._maybeAbortConversation();
+
+        // 1) Have we just exceeded our max‐length conversation?
+        if ( this._maybeFinishConversation(deltaTime, canvasWidth, canvasHeight) ) {
+            return;
+        }
+
+        // 2) If we’re near someone, handle the “conversation” branch
+        if ( this._isNearSomeone() ) {
+            this._drawVillager(context);
+
+            // if we’re already talking, do nothing else
+            if ( this.inConversation ) {
+                return;
+            }
+
+            if ( this._isInCooldown() ) {
+                this._resumeOrContinueMovement(deltaTime, canvasWidth, canvasHeight, context);
+            } else {
+                console.log(this.name, "start conversation");
+
+                    this._startConversation();
+
+            }
+
+            return;
+        }
+
+        // 3) Otherwise, fall back to normal movement+drawing
+        this._resumeOrContinueMovement(deltaTime, canvasWidth, canvasHeight, context);
+    }
+
+    _maybeAbortConversation() {
+        if ( this.inConversation && !this._isNearSomeone() ) {
+            console.log("_maybeAbortConversation - abort")
+            this.ongoingConversation = [];
             this.inConversation = false;
             console.log(this.name, "in conversation but not near anyone");
         }
+    }
 
-        if (this._isNearSomeone() && this.inConversation && this.ongoingConversation.length > this.maxMessagesPerConversation) {
-            // finish conversation
+    _maybeFinishConversation(dt, w, h) {
+        if ( this._isNearSomeone()
+            && this.inConversation
+            && this.ongoingConversation.length > this.maxMessagesPerConversation )
+        {
+            console.log("_maybeFinishConversation - finish")
             this._finishConversation();
-
             this.inConversation = false;
             this.ongoingConversation = [];
             this._lastConversationEnd = Date.now();
             this._handleResumeMovement();
-
-            this._handleMoving(deltaTime, canvasWidth, canvasHeight);
-
-            console.log(this.name, "this.ongoingConversation.length", this.ongoingConversation.length);
-            return;
+            this._handleMoving(dt, w, h);
+            console.log(this.name, "ended conversation after max messages", this._lastConversationEnd );
+            return true;
         }
+        return false;
+    }
 
-        if (this._isNearSomeone() ) {
-            //continue drawing the character on map
-            this._drawVillagerOnCanvas(context);
+    _isInCooldown() {
+        return Date.now() - this._lastConversationEnd < this._conversationCooldown;
+    }
 
-            // but stop any movement and focus on speaking
-            if (this.inConversation) {
-                return;
-            }
-
-
-            // if we’re still in the cooldown window, don’t re-start
-            if ( Date.now() - this._lastConversationEnd < this._conversationCooldown ) {
-                // console.log(this.name, "cooldown");
-                // console.log("this._lastConversationEnd", this._lastConversationEnd);
-
-                if (this._shouldResumeMovement()) {
-                    this._handleResumeMovement();
-                }
-
-                if (this.movementState === 'moving') {
-                    this._handleMoving(deltaTime, canvasWidth, canvasHeight);
-                } else if (this.movementState === 'paused') { // paused
-                    this._handlePaused(deltaTime);
-                }
-                this._drawVillagerOnCanvas(context);
-                this._throttledKafkaEmit();
-
-
-
-                return;
-            }
-
-            // console.log("this._lastConversationEnd", this._lastConversationEnd);
-            console.log(this.name, "start conversation");
-            // console.debug();
-            this._startConversation();
-
-            return;
-        }
-
-        if (this._shouldResumeMovement()) {
+    _resumeOrContinueMovement(dt, w, h, ctx) {
+        if ( this._shouldResumeMovement() ) {
             this._handleResumeMovement();
         }
-
-        if (this.movementState === 'moving') {
-            this._handleMoving(deltaTime, canvasWidth, canvasHeight);
-        } else if (this.movementState === 'paused') { // paused
-            this._handlePaused(deltaTime);
+        if ( this.movementState === 'moving' ) {
+            this._handleMoving(dt, w, h);
+        } else {
+            this._handlePaused(dt);
         }
-        this._drawVillagerOnCanvas(context);
+        this._drawVillagerOnCanvas(ctx);
         this._throttledKafkaEmit();
     }
+
+    _drawVillager(ctx) {
+        this._drawVillagerOnCanvas(ctx);
+    }
+
 
     sendVillagerLocationToKafka() {
         socket.emit('villagerLocationUpdated', {
@@ -143,6 +152,13 @@ class Villager {
     _listen({ from, to, message }) {
         // console.log("_listen", from, to, message);
         if (to === this.name) {
+
+            if(this._isInCooldown() || !this.nextTo.find(villager => villager.name === from)) {
+                console.log("_listen - stop talking!", this._isInCooldown(), !this.nextTo.find(villager => villager.name === from) );
+                return;
+                //stop talking
+            }
+
             // console.log("got message from ", from, message);
             this.ongoingConversation.push(`${from} said to me: ${message}`);
             this._reply(from, message);
@@ -150,6 +166,11 @@ class Villager {
     }
 
     _startConversation() {
+
+        // only if another villager is not in conversation
+        //if(!this.nextTo[0].inConversation){
+        // const availablePartner = this.nextTo.find(villager => villager.inConversation === false);
+
         this.inConversation = true;
         const partner = this.nextTo[0];
         if (!partner) {
@@ -189,8 +210,18 @@ class Villager {
     }
 
     async _reply(to, heard_message) {
+        if(this._isInCooldown() || !this.nextTo.find(villager => villager.name === to)) {
+            console.log("_reply - stop talking!", this._isInCooldown(), !this.nextTo.find(villager => villager.name === to) );
+            return;
+            //stop talking
+        }
+
         const partner = this.nextTo[0];
-        if (!partner) return;
+
+        if (!partner) {
+            console.log("suspicious - no conversation partner ")
+            return;
+        }
 
         // fire off to your server
         let reply;
@@ -219,7 +250,7 @@ class Villager {
         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
 
         setTimeout(() => {
-            console.log(this.name, '5 seconds later');
+            console.log(this.name, 'some seconds later');
             socket.emit('villagerMessage', {
                 from: this.name,
                 to,
@@ -227,7 +258,7 @@ class Villager {
             });
             this.currentMessage = null;
             // …anything you want to do after the pause…
-        }, 5000);
+        }, 75 * reply.length + 1000);
     }
 
 
@@ -235,7 +266,7 @@ class Villager {
         const padding    = 8;               // space between text and box edge
         const lineHeight = 18;              // px between text lines
         const maxWidth   = 150;             // max text width before wrapping
-        const charSpeed  = 50;              // ms per character
+        const charSpeed  = 75;              // ms per character
 
         // ——— speech-animation state ———
         if (!this._speechAnim || this._speechAnim.fullMessage !== message) {
