@@ -43,6 +43,8 @@ Keep it short, friendly, and in character.
 
     const input = `Pretend you're the character ${name} and reply to ${partnerName}. Keep it short, friendly, and in character. Don't add any extra info, description, explanation - only give what should be spoken outloud. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it.`;
 
+    //const relevant info ----
+
     // return `Message from ${name} to ${partnerName}.}`;
     const response = await client.responses.create({
         model: "gpt-3.5-turbo",

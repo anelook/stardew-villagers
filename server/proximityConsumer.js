@@ -48,11 +48,11 @@ async function initConsumer(io) {
 
                 // merge them into one flat object
                 // const merged = { ...keyObj, ...valueObj };
-                console.log("=====> message.offset: ", message.offset);
+                // console.log("=====> message.offset: ", message.offset);
 
 
                 // console.log("consumer ====> ", merged);
-                console.log("consumer ====> ", JSON.stringify(valueObj));
+                // console.log("consumer ====> ", JSON.stringify(valueObj));
 
                 io.emit('villagersProximityIOEvent', valueObj);
             } catch (err) {

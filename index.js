@@ -3,7 +3,9 @@ const path = require('path');
 const express = require('express');
 const http = require('http');
 const { initProducer, sendVillagerLocationUpdate } = require('./server/movementProducer');
-const villagerRoutes = require('./server/routes/reply');
+const replyRoutes = require('./server/routes/reply');
+const summaryRoutes = require('./server/routes/summary');
+const memoryRoutes = require('./server/routes/memory');
 const { initConsumer } = require('./server/proximityConsumer');
 // initi conversation producer and consumer
 const app = express();
@@ -18,7 +20,9 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use('/data',   express.static(path.join(__dirname, 'data')));
-app.use("/api/villager", villagerRoutes);
+app.use("/api/villager", replyRoutes);
+app.use("/api/general", summaryRoutes);
+app.use("/api/memory", memoryRoutes);
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 

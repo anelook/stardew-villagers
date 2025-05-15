@@ -11,8 +11,6 @@ const {
     NO_GO_ZONES
 } = window.CONFIG;
 
-// import { generateVillagerReply } from "./openaiClient.js";
-
 class Villager {
     constructor(name, imagePath, x, y, metadata = {}) {
         this.name        = name;
@@ -79,7 +77,7 @@ class Villager {
             }
 
             if ( this._isInCooldown() ) {
-                console.log("cooldown - continue walking")
+                // console.log("cooldown - continue walking")
                 this._resumeOrContinueMovement(deltaTime, canvasWidth, canvasHeight, context);
                 return;
             } else {
@@ -93,17 +91,17 @@ class Villager {
         }
 
         // 3) Otherwise, fall back to normal movement+drawing
-        console.log("fallback - continue walking")
+        // console.log("fallback - continue walking")
         this._resumeOrContinueMovement(deltaTime, canvasWidth, canvasHeight, context);
     }
 
     _maybeAbortConversation() {
         if ( this.inConversation && !this._isNearSomeone() ) {
-            console.log("_maybeAbortConversation - abort")
+            // console.log("_maybeAbortConversation - abort")
             this.ongoingConversation = [];
             this.inConversationWith = null;
             this.inConversation = false;
-            console.log(this.name.toUpperCase() , "in conversation but not near anyone");
+            // console.log(this.name.toUpperCase() , "in conversation but not near anyone");
         }
     }
 
@@ -112,7 +110,7 @@ class Villager {
             && this.inConversation
             && this.ongoingConversation.length > this.maxMessagesPerConversation )
         {
-            console.log(this.name.toUpperCase(), "_maybeFinishConversation - finish, because length: ", this.ongoingConversation.length)
+            // console.log(this.name.toUpperCase(), "_maybeFinishConversation - finish, because length: ", this.ongoingConversation.length)
             this._finishConversation();
             this.inConversation = false;
             this.inConversationWith = null;
@@ -163,7 +161,7 @@ class Villager {
         if (to === this.name) {
 
             if(this._isInCooldown() || !this.nextTo.find(villager => villager.name === from)) {
-                console.log("_listen - stop talking!", this._isInCooldown(), !this.nextTo.find(villager => villager.name === from) );
+                // console.log("_listen - stop talking!", this._isInCooldown(), !this.nextTo.find(villager => villager.name === from) );
                 return;
                 //stop talking
             }
@@ -183,16 +181,16 @@ class Villager {
         if(availablePartner || someOneTalksToMe) {
             this.inConversationWith = availablePartner || someOneTalksToMe;
         } else {
-            console.log(this.name.toUpperCase() , "availablePartner not found");
+            // console.log(this.name.toUpperCase() , "availablePartner not found");
             return false; // everyone else is busy
         }
-        console.log(this.name.toUpperCase() , "has availablePartner - ", this.inConversationWith.name);
-        console.log(this.name.toUpperCase() , "start conversation");
+        // console.log(this.name.toUpperCase() , "has availablePartner - ", this.inConversationWith.name);
+        // console.log(this.name.toUpperCase() , "start conversation");
         this.inConversation = true;
 
         if (this.name < this.inConversationWith.name) {
             // give prio by name
-            console.log(this.name.toUpperCase() , "Sends first message")
+            // console.log(this.name.toUpperCase() , "Sends first message")
             this._sendFirstPhrase(this.inConversationWith.name, "hi!");
         }
 
@@ -211,23 +209,47 @@ class Villager {
 
     }
 
-    _finishConversation() {
-        console.log(this.name.toUpperCase() , "_finishConversation");
+    async _finishConversation() {
+        // console.log(this.name.toUpperCase() , "_finishConversation");
 
-        // this.
-        // send data from this.ongoingConversation to llm for summary
-        // get vector data
-        // and store response in opensearch
-        // await fetch("/api/villager/concludeConversation", {
-        // this.inConversation = false;
-        // this.ongoingConversation = [];
-        // this._handleResumeMovement()
+        let summary;
+        try {
+            const res = await fetch("/api/general/summary", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: this.name,
+                    partnerName: this.inConversationWith.name,
+                    history: this.ongoingConversation
+                })
+            });
+            const { reply: text } = await res.json();
+            summary = text;
 
+        } catch (err) {
+            console.error("fetch error", err);
+            summary = "Umm… I’m so forgetful.";
+            return;
+        }
+        console.log(this.name.toUpperCase(), "conversation summary: ", summary);
+
+        try {
+            await fetch("/api/memory/store", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: this.name,
+                    conversation_summary: summary
+                })
+            });
+        } catch (err) {
+            console.error("fetch error", err);
+        }
     }
 
     async _reply(to, heard_message) {
         if(this._isInCooldown() || !this.nextTo.find(villager => villager.name === to)) {
-            console.log("_reply - stop talking!", this._isInCooldown(), !this.nextTo.find(villager => villager.name === to) );
+            // console.log("_reply - stop talking!", this._isInCooldown(), !this.nextTo.find(villager => villager.name === to) );
             return;
             //stop talking
         }
@@ -266,7 +288,7 @@ class Villager {
         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
 
         setTimeout(() => {
-            console.log(this.name.toUpperCase() , 'some seconds later');
+            // console.log(this.name.toUpperCase() , 'some seconds later');
             socket.emit('villagerMessage', {
                 from: this.name,
                 to,
