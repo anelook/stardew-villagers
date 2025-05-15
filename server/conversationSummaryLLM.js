@@ -35,25 +35,24 @@ You’re having a friendly conversation with ${partnerName}.
 This is the conversation so far: ${history.join(" ===> ")}
 Their background: ${partnerMetadata.background}
 Their loves: ${partnerMetadata.loves}. 
-Keep it short, friendly, and in character. 
- Don't add any extra info, description, explanation - only give a reply. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it. 
+Keep it short, friendly, and in character.
   `.trim();
 
     // Build the chat history
 
-    const input = `Pretend you're the character ${name} and reply to ${partnerName}. Keep it short, friendly, and in character. Don't add any extra info, description, explanation - only give what should be spoken outloud. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it.`;
+    const input = "What would you say next to them? Keep it short, friendly, and in character.";
 
-    // return `Message from ${name} to ${partnerName}.}`;
-    const response = await client.responses.create({
-        model: "gpt-3.5-turbo",
-        instructions,
-        input
-        // max_tokens: 100,
-        // temperature: 0.8
-    });
-
-    console.log({response});
-    return response.output_text;
+    return `Message from ${name} to ${partnerName}.}`;
+    // const response = await client.responses.create({
+    //     model: "gpt-3.5-turbo",
+    //     instructions,
+    //     input
+    //     // max_tokens: 100,
+    //     // temperature: 0.8
+    // });
+    //
+    // console.log({response});
+    // return response.output_text;
 }
 
 

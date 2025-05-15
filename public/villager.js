@@ -36,10 +36,10 @@ class Villager {
         this.ongoingConversation = [];
 
         // how many ms to wait between conversations:
-        this._conversationCooldown = 10000;//(Math.random() * (40 - 10) + 10) * 1000;
+        this._conversationCooldown = 15000;//(Math.random() * (40 - 10) + 10) * 1000;
         this.maxMessagesPerConversation = 4;
         // when was the last conversation ended?
-        this._lastConversationEnd = null//Date.now(); //prevent conversations during first 30 sec
+        this._lastConversationEnd = Date.now(); //prevent conversations during first 10 sec
 
         this._initMovement();
 
@@ -63,6 +63,9 @@ class Villager {
 
         // 1) Have we just exceeded our max‐length conversation?
         if ( this._maybeFinishConversation(deltaTime, canvasWidth, canvasHeight) ) {
+            this.movementState = 'paused';
+            this.movementStateTimer = this._randomDuration(PAUSED_MIN_DURATION, PAUSED_MAX_DURATION);
+
             return;
         }
 
@@ -210,6 +213,7 @@ class Villager {
 
     _finishConversation() {
         console.log(this.name.toUpperCase() , "_finishConversation");
+
         // this.
         // send data from this.ongoingConversation to llm for summary
         // get vector data
