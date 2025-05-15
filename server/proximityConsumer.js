@@ -43,17 +43,18 @@ async function initConsumer(io) {
         eachMessage: async ({ topic, partition, message }) => {
             try {
                 // decode Avro‐encoded key & value
-                const keyObj   = await registry.decode(message.key);
+                // const keyObj   = await registry.decode(message.key);
                 const valueObj = await registry.decode(message.value);
 
                 // merge them into one flat object
-                const merged = { ...keyObj, ...valueObj };
-                // console.log("=====> message.offset: ", message.offset);
+                // const merged = { ...keyObj, ...valueObj };
+                console.log("=====> message.offset: ", message.offset);
 
 
-                console.log("consumer ====> ", merged);
+                // console.log("consumer ====> ", merged);
+                console.log("consumer ====> ", JSON.stringify(valueObj));
 
-                io.emit('villagersProximityIOEvent', merged);
+                io.emit('villagersProximityIOEvent', valueObj);
             } catch (err) {
                 console.error('Failed to decode/process proximity message', err);
             }

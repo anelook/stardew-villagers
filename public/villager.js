@@ -32,13 +32,14 @@ class Villager {
         this.nextTo      = [];
         
         this.inConversation = false;
+        this.inConversationWith = null;
         this.ongoingConversation = [];
 
         // how many ms to wait between conversations:
-        this._conversationCooldown = 20000;//(Math.random() * (40 - 10) + 10) * 1000;
+        this._conversationCooldown = 10000;//(Math.random() * (40 - 10) + 10) * 1000;
         this.maxMessagesPerConversation = 4;
         // when was the last conversation ended?
-        this._lastConversationEnd = Date.now(); //prevent conversations during first 30 sec
+        this._lastConversationEnd = null//Date.now(); //prevent conversations during first 30 sec
 
         this._initMovement();
 
@@ -75,18 +76,21 @@ class Villager {
             }
 
             if ( this._isInCooldown() ) {
+                console.log("cooldown - continue walking")
                 this._resumeOrContinueMovement(deltaTime, canvasWidth, canvasHeight, context);
+                return;
             } else {
-                console.log(this.name, "start conversation");
 
-                    this._startConversation();
+
+                 if(this._startConversation()) {
+                   return
+                 }
 
             }
-
-            return;
         }
 
         // 3) Otherwise, fall back to normal movement+drawing
+        console.log("fallback - continue walking")
         this._resumeOrContinueMovement(deltaTime, canvasWidth, canvasHeight, context);
     }
 
@@ -94,8 +98,9 @@ class Villager {
         if ( this.inConversation && !this._isNearSomeone() ) {
             console.log("_maybeAbortConversation - abort")
             this.ongoingConversation = [];
+            this.inConversationWith = null;
             this.inConversation = false;
-            console.log(this.name, "in conversation but not near anyone");
+            console.log(this.name.toUpperCase() , "in conversation but not near anyone");
         }
     }
 
@@ -104,14 +109,15 @@ class Villager {
             && this.inConversation
             && this.ongoingConversation.length > this.maxMessagesPerConversation )
         {
-            console.log("_maybeFinishConversation - finish")
+            console.log(this.name.toUpperCase(), "_maybeFinishConversation - finish, because length: ", this.ongoingConversation.length)
             this._finishConversation();
             this.inConversation = false;
+            this.inConversationWith = null;
             this.ongoingConversation = [];
             this._lastConversationEnd = Date.now();
             this._handleResumeMovement();
             this._handleMoving(dt, w, h);
-            console.log(this.name, "ended conversation after max messages", this._lastConversationEnd );
+            console.log(this.name.toUpperCase() , "ended conversation after max messages", this._lastConversationEnd );
             return true;
         }
         return false;
@@ -166,22 +172,28 @@ class Villager {
     }
 
     _startConversation() {
-
         // only if another villager is not in conversation
         //if(!this.nextTo[0].inConversation){
-        // const availablePartner = this.nextTo.find(villager => villager.inConversation === false);
 
+        const availablePartner = this.nextTo.find(villager => villager.inConversation === false && villager._isInCooldown() === false);
+        const someOneTalksToMe = this.nextTo.find(villager => villager.inConversationWith === this);
+        if(availablePartner || someOneTalksToMe) {
+            this.inConversationWith = availablePartner || someOneTalksToMe;
+        } else {
+            console.log(this.name.toUpperCase() , "availablePartner not found");
+            return false; // everyone else is busy
+        }
+        console.log(this.name.toUpperCase() , "has availablePartner - ", this.inConversationWith.name);
+        console.log(this.name.toUpperCase() , "start conversation");
         this.inConversation = true;
-        const partner = this.nextTo[0];
-        if (!partner) {
-            console.log("suspicious - no conversation partner ")
+
+        if (this.name < this.inConversationWith.name) {
+            // give prio by name
+            console.log(this.name.toUpperCase() , "Sends first message")
+            this._sendFirstPhrase(this.inConversationWith.name, "hi!");
         }
 
-        if (this.name < partner.name) {
-            // give prio by name
-            console.log(this.name, "Sends first message")
-            this._sendFirstPhrase(partner.name, "hi!");
-        }
+        return true
     }
 
     _sendFirstPhrase(to) {
@@ -197,7 +209,7 @@ class Villager {
     }
 
     _finishConversation() {
-        console.log(this.name, "_finishConversation");
+        console.log(this.name.toUpperCase() , "_finishConversation");
         // this.
         // send data from this.ongoingConversation to llm for summary
         // get vector data
@@ -250,7 +262,7 @@ class Villager {
         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
 
         setTimeout(() => {
-            console.log(this.name, 'some seconds later');
+            console.log(this.name.toUpperCase() , 'some seconds later');
             socket.emit('villagerMessage', {
                 from: this.name,
                 to,

@@ -42,17 +42,17 @@ Keep it short, friendly, and in character.
 
     const input = "What would you say next to them? Keep it short, friendly, and in character.";
 
-    // return `Message from ${name} to ${partnerName}. ${Date.now()}`;
-    const response = await client.responses.create({
-        model: "gpt-3.5-turbo",
-        instructions,
-        input
-        // max_tokens: 100,
-        // temperature: 0.8
-    });
-
-    console.log({response});
-    return response.output_text;
+    return `Message from ${name} to ${partnerName}.}`;
+    // const response = await client.responses.create({
+    //     model: "gpt-3.5-turbo",
+    //     instructions,
+    //     input
+    //     // max_tokens: 100,
+    //     // temperature: 0.8
+    // });
+    //
+    // console.log({response});
+    // return response.output_text;
 }
 
 

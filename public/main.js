@@ -19,11 +19,11 @@ window.onload = function () {
         { name: "Linus", imagePath: "/assets/villagers/Linus.png" },
         { name: "Marnie", imagePath: "/assets/villagers/Marnie.png" },
         { name: "Maru", imagePath: "/assets/villagers/Maru.png" },
-        { name: "Pierre", imagePath: "/assets/villagers/Pierre.png" },
-        { name: "Robin", imagePath: "/assets/villagers/Robin.png" },
-        { name: "Sam", imagePath: "/assets/villagers/Sam.png" },
-        { name: "Sebastian", imagePath: "/assets/villagers/Sebastian.png" },
-        { name: "Shane", imagePath: "/assets/villagers/Shane.png" },
+        // { name: "Pierre", imagePath: "/assets/villagers/Pierre.png" },
+        // { name: "Robin", imagePath: "/assets/villagers/Robin.png" },
+        // { name: "Sam", imagePath: "/assets/villagers/Sam.png" },
+        // { name: "Sebastian", imagePath: "/assets/villagers/Sebastian.png" },
+        // { name: "Shane", imagePath: "/assets/villagers/Shane.png" },
         // { name: "Snail", imagePath: "/assets/villagers/Snail.png" }
     ];
 
@@ -159,7 +159,7 @@ window.onload = function () {
 
 
             // ─── INSERTED: draw proximity‐boxes ───
-            const rawRadius    = Math.sqrt(3024);           // ≃100.12 world units
+            const rawRadius    = Math.sqrt(1024);           // ≃100.12 world units
             const screenRadius = rawRadius * scaleFactor;     // px on screen
             const side         = screenRadius * 2;
 
