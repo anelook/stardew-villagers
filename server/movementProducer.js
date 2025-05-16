@@ -71,7 +71,7 @@ async function sendVillagerLocationUpdate(villagerName, x, y) {
             topic: process.env.KAFKA_VILLAGERS_LOCATION_TOPIC,
             messages: [{ value: encodedPayload }]
         });
-        console.log(`Sent update for ${villagerName}: (${x}, ${y}) at ${payload.timestamp}`);
+        // console.log(`Sent update for ${villagerName}: (${x}, ${y}) at ${payload.timestamp}`);
     } catch (err) {
         console.error('Error sending update to Kafka:', err);
     }

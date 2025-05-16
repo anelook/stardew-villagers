@@ -46,7 +46,7 @@ io.on('connection', socket => {
     // })
 
     socket.on('villagerMessage', msg => {
-        console.log('received villagerMessage on server:', msg);
+        // console.log('received villagerMessage on server:', msg);
         // send to *all* clients (including sender) – or use socket.broadcast.emit to exclude sender
         io.emit('villagerMessage', msg);
     });
@@ -55,7 +55,7 @@ io.on('connection', socket => {
     socket.on('villagerLocationUpdated', async ({ name, x, y }) => {
         try {
             await sendVillagerLocationUpdate(name, x, y);
-            console.log(`Received ${name}  ${x}  ${y}`);
+            // console.log(`Received ${name}  ${x}  ${y}`);
         } catch (err) {
             console.error('Error sending to Kafka:', err);
         }

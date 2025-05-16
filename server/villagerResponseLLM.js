@@ -25,7 +25,8 @@ async function generateVillagerReply({
                                                 partnerName,
                                                 partnerMetadata,
                                                 history,
-                                                heardMessage
+                                                heardMessage,
+                                                relevantMemories
                                             }) {
     const instructions = `
 You are a villager named ${name}.
@@ -35,13 +36,18 @@ You’re having a friendly conversation with ${partnerName}.
 This is the conversation so far: ${history.join(" ===> ")}
 Their background: ${partnerMetadata.background}
 Their loves: ${partnerMetadata.loves}. 
-Keep it short, friendly, and in character. 
- Don't add any extra info, description, explanation - only give a reply. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it. 
+you also have some relevant memories from the past conversations today: === ${relevantMemories} ===
+
+--- Your goal is to reply.
+Keep it short, friendly, and in character, try avoid a shallow small talk. 
+ Only give a reply, do not add any explanations before it, don't mention your name, just speak from the name of the villager. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it. 
   `.trim();
 
     // Build the chat history
 
-    const input = `Pretend you're the character ${name} and reply to ${partnerName}. Keep it short, friendly, and in character. Don't add any extra info, description, explanation - only give what should be spoken outloud. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it.`;
+    // const haveMetBefore = relevantMemories && relevantMemories.length > 0 ? `You have met today before and spoke before, `;
+
+    const input = `You're ${name}. reply to ${partnerName}. This is the message you heard: ${heardMessage}. Keep it short, friendly, and in character.  Only give a reply, do not add any explanations before it, don't mention your name, just speak from the name of the villager. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it.`;
 
     //const relevant info ----
 
@@ -54,7 +60,7 @@ Keep it short, friendly, and in character.
         // temperature: 0.8
     });
 
-    console.log({response});
+    console.log("generateVillagerReply =>", name.toUpperCase(), response.output_text);
     return response.output_text;
 }
 

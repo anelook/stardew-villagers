@@ -35,7 +35,7 @@ class Villager {
 
         // how many ms to wait between conversations:
         this._conversationCooldown = 15000;//(Math.random() * (40 - 10) + 10) * 1000;
-        this.maxMessagesPerConversation = 4;
+        this.maxMessagesPerConversation = 15;
         // when was the last conversation ended?
         this._lastConversationEnd = Date.now(); //prevent conversations during first 10 sec
 
@@ -118,7 +118,7 @@ class Villager {
             this._lastConversationEnd = Date.now();
             this._handleResumeMovement();
             this._handleMoving(dt, w, h);
-            console.log(this.name.toUpperCase() , "ended conversation after max messages", this._lastConversationEnd );
+            // console.log(this.name.toUpperCase() , "ended conversation after max messages", this._lastConversationEnd );
             return true;
         }
         return false;
@@ -166,7 +166,7 @@ class Villager {
                 //stop talking
             }
 
-            // console.log("got message from ", from, message);
+            console.log(this.name.toUpperCase(), "got message from ", from, " : ", message);
             this.ongoingConversation.push(`${from} said to me: ${message}`);
             this._reply(from, message);
         }
@@ -264,6 +264,21 @@ class Villager {
         // fire off to your server
         let reply;
         try {
+
+            const relevantMemories = await fetch("/api/memory/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: this.name,
+                    query: heard_message
+                })
+            });
+
+            // console.log(relevantMemories);
+
+
+
+            console.log(this.name.toUpperCase(), "about to speak to", partner.name);
             const res = await fetch("/api/villager/reply", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -273,7 +288,8 @@ class Villager {
                     partnerName: partner.name,
                     partnerMetadata: partner.metadata,
                     history: this.ongoingConversation,
-                    heardMessage: heard_message
+                    heardMessage: heard_message,
+                    relevantMemories: relevantMemories,
                 })
             });
             const { reply: text } = await res.json();

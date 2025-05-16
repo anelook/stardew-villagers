@@ -31,8 +31,8 @@ You're  ${name}, one of the villagers in Stardew Valley. You just had a chat wit
         // temperature: 0.8
     });
 
-    console.log({response});
-    return response.output_text;
+    //console.log({response});
+    return `I talked with ${partnerName} today: ${response.output_text}`;
 }
 
 

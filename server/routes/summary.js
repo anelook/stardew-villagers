@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/summary', async (req, res) => {
 
-    console.log(req.body);
+    //console.log(req.body);
     const {
         name,
         partnerName,

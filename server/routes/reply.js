@@ -6,14 +6,15 @@ const router = express.Router();
 
 router.post('/reply', async (req, res) => {
 
-    console.log(req.body);
+    // console.log(req.body);
     const {
         name,
         metadata,
         partnerName,
         partnerMetadata,
         history,
-        heardMessage
+        heardMessage,
+        relevantMemories
     } = req.body;
 
     try {
@@ -23,7 +24,8 @@ router.post('/reply', async (req, res) => {
             partnerName,
             partnerMetadata,
             history,
-            heardMessage
+            heardMessage,
+            relevantMemories
         });
         res.json({ reply });
     } catch (err) {

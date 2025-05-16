@@ -16,15 +16,15 @@ window.onload = function () {
     const villagerData = [
         { name: "Jodi", imagePath: "/assets/villagers/Jodi.png" },
         { name: "Lewis", imagePath: "/assets/villagers/Lewis.png" },
-        { name: "Linus", imagePath: "/assets/villagers/Linus.png" },
-        { name: "Marnie", imagePath: "/assets/villagers/Marnie.png" },
-        { name: "Maru", imagePath: "/assets/villagers/Maru.png" },
-        { name: "Pierre", imagePath: "/assets/villagers/Pierre.png" },
-        { name: "Robin", imagePath: "/assets/villagers/Robin.png" },
-        { name: "Sam", imagePath: "/assets/villagers/Sam.png" },
-        { name: "Sebastian", imagePath: "/assets/villagers/Sebastian.png" },
-        { name: "Shane", imagePath: "/assets/villagers/Shane.png" },
-        { name: "Snail", imagePath: "/assets/villagers/Snail.png" }
+        // { name: "Linus", imagePath: "/assets/villagers/Linus.png" },
+        // { name: "Marnie", imagePath: "/assets/villagers/Marnie.png" },
+        // { name: "Maru", imagePath: "/assets/villagers/Maru.png" },
+        // { name: "Pierre", imagePath: "/assets/villagers/Pierre.png" },
+        // { name: "Robin", imagePath: "/assets/villagers/Robin.png" },
+        // { name: "Sam", imagePath: "/assets/villagers/Sam.png" },
+        // { name: "Sebastian", imagePath: "/assets/villagers/Sebastian.png" },
+        // { name: "Shane", imagePath: "/assets/villagers/Shane.png" },
+        // { name: "Snail", imagePath: "/assets/villagers/Snail.png" }
     ];
 
     let villagers = [];
@@ -168,6 +168,7 @@ window.onload = function () {
             context.lineWidth   = 1;
             context.setLineDash([5,5]);
 
+            // console.log("mapLoaded", villagers.length);
             villagers.forEach(v => {
                 // assume v.x/v.y are already in screen coords; if not, convert:
                 const sx = v.x;
@@ -184,6 +185,8 @@ window.onload = function () {
             context.restore();
             // ────────────────────────────────────────────
         }
+
+        // console.log("mapLoaded 2 - ", villagers.length);
 
         // Update and draw each villager.
         villagers.forEach(villager => {

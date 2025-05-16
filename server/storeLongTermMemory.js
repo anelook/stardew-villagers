@@ -39,7 +39,7 @@ async function storeLongTermMemory({ conversation_summary, name }) {
         embedding,                        // an array of floats
         timestamp: new Date().toISOString()
     };
-    const indexName = process.env.OPENSEARCH_INDEX + '_' + name;
+    const indexName = process.env.OPENSEARCH_INDEX + '_' + name.toLowerCase();
 
     // 3) Index into OpenSearch
     const resp = await osClient.index({
