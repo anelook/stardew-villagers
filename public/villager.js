@@ -37,7 +37,7 @@ class Villager {
         this._conversationCooldown = 15000;//(Math.random() * (40 - 10) + 10) * 1000;
         this.maxMessagesPerConversation = 15;
         // when was the last conversation ended?
-        this._lastConversationEnd = Date.now(); //prevent conversations during first 10 sec
+        this._lastConversationEnd = null;// Date.now(); //prevent conversations during first 10 sec
 
         this._initMovement();
 
@@ -106,9 +106,9 @@ class Villager {
     }
 
     _maybeFinishConversation(dt, w, h) {
-        if ( this._isNearSomeone()
+        if ( this.wantsToFinishConversation || (this._isNearSomeone()
             && this.inConversation
-            && this.ongoingConversation.length > this.maxMessagesPerConversation )
+            && this.ongoingConversation.length > this.maxMessagesPerConversation) )
         {
             // console.log(this.name.toUpperCase(), "_maybeFinishConversation - finish, because length: ", this.ongoingConversation.length)
             this._finishConversation();
@@ -116,6 +116,7 @@ class Villager {
             this.inConversationWith = null;
             this.ongoingConversation = [];
             this._lastConversationEnd = Date.now();
+            this.wantsToFinishConversation = false;
             this._handleResumeMovement();
             this._handleMoving(dt, w, h);
             // console.log(this.name.toUpperCase() , "ended conversation after max messages", this._lastConversationEnd );
@@ -168,7 +169,12 @@ class Villager {
 
             console.log(this.name.toUpperCase(), "got message from ", from, " : ", message);
             this.ongoingConversation.push(`${from} said to me: ${message}`);
-            this._reply(from, message);
+
+            if(message.indexOf("CONVERSATION END") > -1) {
+                this.wantsToFinishConversation = true;
+            } else {
+                this._reply(from, message);
+            }
         }
     }
 
@@ -302,6 +308,10 @@ class Villager {
 
         this.currentMessage = reply;
         this.ongoingConversation.push(`I said to ${to}: ${reply}`);
+
+        if(reply.indexOf("CONVERSATION END") > -1) {
+            this.wantsToFinishConversation = true;
+        }
 
         setTimeout(() => {
             // console.log(this.name.toUpperCase() , 'some seconds later');

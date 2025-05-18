@@ -1,68 +1,75 @@
 // openaiClient.js
 require('dotenv').config();
 
-const OpenAI = require('openai');
+const {OpenAI} = require('openai');
 
 const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY, // This is the default and can be omitted
+    apiKey: process.env.OPENAI_API_KEY, // can be omitted if using default env var
 });
 
 /**
  * Generate a reply for a villager conversation using the OpenAI Chat API.
  *
  * @param {Object}   opts
- * @param {string}   opts.name             The villager's name
- * @param {Object}   opts.metadata         The villager's metadata (background, loves, etc)
- * @param {string}   opts.partnerName      The other villager's name
- * @param {Object}   opts.partnerMetadata  The other villager's metadata
- * @param {string[]} opts.history          Array of “X said to Y: …” lines so far
- * @param {string}   opts.heardMessage     The last message you want to respond to
- * @returns {Promise<string>}              The villager’s generated reply
+ * @param {string}   opts.name              The villager's name
+ * @param {Object}   opts.metadata          The villager's metadata (background, loves, etc)
+ * @param {string}   opts.partnerName       The other villager's name
+ * @param {Object}   opts.partnerMetadata   The other villager's metadata
+ * @param {string[]} opts.history           Array of “X said to Y: …” lines so far
+ * @param {string}   opts.heardMessage      The last message you want to respond to
+ * @param {string}   opts.relevantMemories  Any relevant memories from today
+ * @returns {Promise<string>}               The villager’s generated reply
  */
 async function generateVillagerReply({
-                                                name,
-                                                metadata,
-                                                partnerName,
-                                                partnerMetadata,
-                                                history,
-                                                heardMessage,
-                                                relevantMemories
-                                            }) {
-    const instructions = `
-You are a villager named ${name}.
-Background: ${metadata.background}
-Loves: ${metadata.loves}
-You’re having a friendly conversation with ${partnerName}.
-This is the conversation so far: ${history.join(" ===> ")}
-Their background: ${partnerMetadata.background}
-Their loves: ${partnerMetadata.loves}. 
-you also have some relevant memories from the past conversations today: === ${relevantMemories} ===
+                                         name,
+                                         metadata,
+                                         partnerName,
+                                         partnerMetadata,
+                                         history,
+                                         heardMessage,
+                                         relevantMemories = [],
+                                     }) {
+    const instructions = [
+        `You are a villager named ${name}.`,
+        `YOUR background: ${metadata.background}`,
+        `YOU love: ${metadata.loves}`,
+        ``,
+        `You’re having a friendly conversation with ${partnerName}.`,
+        `Their background: ${partnerMetadata.background}`,
+        `Their loves: ${partnerMetadata.loves}.`,
+        ``,
+        `Relevant memories from today:`,
+        relevantMemories.length > 0
+            ? `- ${relevantMemories.join('\n- ')}`
+            : 'None',
+        `Your goal is to reply as ${name}:`,
+        `- Keep it short, friendly, and in character.`,
+        `- Avoid shallow small talk.`,
+        `- Only give a reply; no explanations or meta-comments.`,
+        `- Do not mention your own name; speak as the villager.`,
+        `- If conversation is ongoing, do not greet again.`,
+        `- Answer questions, ask clarifying questions, and evolve the topic.`,
+        `- When the conversation is done, end with exactly "CONVERSATION END".`
+    ].join('\n')
 
---- Your goal is to reply.
-Keep it short, friendly, and in character, try avoid a shallow small talk. 
- Only give a reply, do not add any explanations before it, don't mention your name, just speak from the name of the villager. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it. 
-  `.trim();
+    const input = [`Conversation so far:`,
+        ...history.map((line, i) => `${i + 1}. ${line}`),
+        ``,
+        `${partnerName} just said to you: "${heardMessage}"`,
+        ``,
+        `Please respond. Answer questions, ask clarifying questions, and evolve the topic. Be concise, exchange short phrases:`
+    ].join('\n')
 
-    // Build the chat history
-
-    // const haveMetBefore = relevantMemories && relevantMemories.length > 0 ? `You have met today before and spoke before, `;
-
-    const input = `You're ${name}. reply to ${partnerName}. This is the message you heard: ${heardMessage}. Keep it short, friendly, and in character.  Only give a reply, do not add any explanations before it, don't mention your name, just speak from the name of the villager. If the conversation is already ongoing, do not greet the villager, just continue talking. If asked a question, answer it and keep up conversation evolving it.`;
-
-    //const relevant info ----
-
-    // return `Message from ${name} to ${partnerName}.}`;
     const response = await client.responses.create({
         model: "gpt-3.5-turbo",
         instructions,
         input
-        // max_tokens: 100,
-        // temperature: 0.8
     });
 
-    console.log("generateVillagerReply =>", name.toUpperCase(), response.output_text);
+    console.log(`instructions => ${instructions}`);
+    console.log(`input => ${input}`);
+    console.log(`generateVillagerReply => ${name.toUpperCase()}:`, response.output_text);
     return response.output_text;
 }
 
-
-module.exports = { generateVillagerReply };
+module.exports = {generateVillagerReply};
