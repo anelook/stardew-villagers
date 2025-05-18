@@ -32,7 +32,7 @@ const consumer = kafka.consumer({
     maxBytes: 1048576       // e.g. 1 MB max per fetch (default 10 MB)
 });
 
-async function initConsumer(io) {
+async function initMovementConsumer(io) {
     await consumer.connect();
     await consumer.subscribe({
         topic: process.env.KAFKA_PROXIMITY_TOPIC,
@@ -64,4 +64,4 @@ async function initConsumer(io) {
     console.log('Kafka proximity‐consumer up and running…');
 }
 
-module.exports = { initConsumer };
+module.exports = { initMovementConsumer };

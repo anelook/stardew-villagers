@@ -2,11 +2,13 @@
 const path = require('path');
 const express = require('express');
 const http = require('http');
-const { initProducer, sendVillagerLocationUpdate } = require('./server/movementProducer');
+const { initMovementProducer, sendVillagerLocationUpdate } = require('./server/movementProducer');
+const { initMovementConsumer } = require('./server/proximityConsumer');
+
 const replyRoutes = require('./server/routes/reply');
 const summaryRoutes = require('./server/routes/summary');
 const memoryRoutes = require('./server/routes/memory');
-const { initConsumer } = require('./server/proximityConsumer');
+
 // initi conversation producer and consumer
 const app = express();
 const server = http.createServer(app);
@@ -27,13 +29,13 @@ app.use("/api/memory", memoryRoutes);
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // connect to Kafka
-initProducer().catch(err => {
+initMovementProducer().catch(err => {
     console.error('Failed to initialize Kafka producer', err);
     process.exit(1);
 });
 
 // connect to Kafka consumer (for proximity)
-initConsumer(io).catch(err => {
+initMovementConsumer(io).catch(err => {
     console.error('Failed to initialize Kafka consumer', err);
     process.exit(1);
 });

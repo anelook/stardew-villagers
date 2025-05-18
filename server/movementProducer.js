@@ -44,7 +44,7 @@ const villagerLocationSchema = {
 let schemaId;
 
 // Initialize the producer and register the Avro schema
-async function initProducer() {
+async function initMovementProducer() {
     await producer.connect();
     schemaId = await registry.register({
         type: SchemaType.AVRO,
@@ -79,6 +79,6 @@ async function sendVillagerLocationUpdate(villagerName, x, y) {
 
 // Export the functions for external use
 module.exports = {
-    initProducer,
+    initMovementProducer,
     sendVillagerLocationUpdate
 };
