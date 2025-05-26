@@ -35,17 +35,22 @@ class Villager {
 
         // how many ms to wait between conversations:
         this._conversationCooldown = 15000;//(Math.random() * (40 - 10) + 10) * 1000;
-        this.maxMessagesPerConversation = 15;
+        this.maxMessagesPerConversation = 7;
         // when was the last conversation ended?
         this._lastConversationEnd = null;// Date.now(); //prevent conversations during first 10 sec
 
         this._initMovement();
 
         // subscribe once to “villagerMessage” topic:
-        socket.on('villagerMessage', (msg) => {
-            // console.log("villagerMessage", msg);
-            this._listen(msg)
-        })
+        // socket.on('villagerMessage', (msg) => {
+        //     // console.log("villagerMessage", msg);
+        //     this._listen(msg)
+        // })
+
+        // socket.on('villagerConversationMessage', (msg) => {
+        //     // console.log("villagerMessage", msg);
+        //     this._listen(msg)
+        // })
 
     }
 
@@ -206,7 +211,7 @@ class Villager {
     _sendFirstPhrase(to) {
         // console.log("_sendFirstPhrase from", this.name)
         // this._drawSpeechBubble(this.context, `Hi, my name is ${this.name}`);
-        socket.emit('villagerMessage', {
+        socket.emit('villagerMessageFromClient', {
             from: this.name,
             to,
             message: "Hi!"
@@ -271,7 +276,7 @@ class Villager {
         let reply;
         try {
 
-            const relevantMemories = await fetch("/api/memory/search", {
+            const relevantMemoriesRequest = await fetch("/api/memory/search", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -280,11 +285,11 @@ class Villager {
                 })
             });
 
-            // console.log(relevantMemories);
 
+            const relevantMemoriesText = await relevantMemoriesRequest.json();
+            console.log("relevantMemoriesText: ", relevantMemoriesText.reply);
 
-
-            console.log(this.name.toUpperCase(), "about to speak to", partner.name);
+            // console.log(this.name.toUpperCase(), "about to speak to", partner.name);
             const res = await fetch("/api/villager/reply", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -295,7 +300,7 @@ class Villager {
                     partnerMetadata: partner.metadata,
                     history: this.ongoingConversation,
                     heardMessage: heard_message,
-                    relevantMemories: relevantMemories,
+                    relevantMemories: relevantMemoriesText,
                 })
             });
             const { reply: text } = await res.json();
@@ -315,7 +320,7 @@ class Villager {
 
         setTimeout(() => {
             // console.log(this.name.toUpperCase() , 'some seconds later');
-            socket.emit('villagerMessage', {
+            socket.emit('villagerMessageFromClient', {
                 from: this.name,
                 to,
                 message: reply

@@ -20,7 +20,7 @@ You're  ${name}, one of the villagers in Stardew Valley. You just had a chat wit
 
     const input = `Here is the conversation you had: ---- ${history} -----. 
     
-    Summarize it, be brief, keep only the important things.`;
+    Summarize it, be concise, but keep only the important things in full details. If any specific events/people mentioned, add those to the summary.`;
 
     // return `Message from ${name} to ${partnerName}.}`;
     const response = await client.responses.create({

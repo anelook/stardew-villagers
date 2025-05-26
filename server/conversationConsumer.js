@@ -33,14 +33,13 @@ async function initConversationConsumer(io) {
 
     await conversationConsumer.run({
         eachMessage: async ({ message }) => {
-            try {
-                const decoded = await registry.decode(message.value);
-                // decoded will be { from, to, message, timestamp }
-                console.log('🤖 conversation →', decoded);
-                io.emit('villagerConversationMessage', decoded);
-            } catch (err) {
-                console.error('Error decoding conversation message', err);
-            }
+            const { from, to, message: text, timestamp } = await registry.decode(message.value);
+            console.log('📬 conversation →', { from, to, text });
+
+            // Send only to the socket(s) of the target villager
+            // (assumes you have joined each villager to a room named after them)
+            console.log('villagerConversationMessage', { from, to, message:text, timestamp });
+            io.emit('villagerConversationMessage', { from, to, message:text, timestamp });
         }
     });
 

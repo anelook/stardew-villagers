@@ -29,27 +29,29 @@ async function generateVillagerReply({
                                          heardMessage,
                                          relevantMemories = [],
                                      }) {
+    console.log("relevantMemories!!! --- ", relevantMemories);
     const instructions = [
-        `You are a villager named ${name}.`,
+        `You live in Stardew Valley, you are a villager named ${name}.`,
         `YOUR background: ${metadata.background}`,
-        `YOU love: ${metadata.loves}`,
+        // `YOU love: ${metadata.loves}`,
         ``,
         `You’re having a friendly conversation with ${partnerName}.`,
         `Their background: ${partnerMetadata.background}`,
-        `Their loves: ${partnerMetadata.loves}.`,
+        // `Their loves: ${partnerMetadata.loves}.`,
         ``,
-        `Relevant memories from today:`,
-        relevantMemories.length > 0
-            ? `- ${relevantMemories.join('\n- ')}`
-            : 'None',
+        `${metadata.goal || ""}`,
+        ``,
+        relevantMemories
+            ? `Relevant memories from today that you want to use for conversation: - ${relevantMemories.reply}`
+            : '',
         `Your goal is to reply as ${name}:`,
-        `- Keep it short, friendly, and in character.`,
-        `- Avoid shallow small talk.`,
+        `- Keep it short, friendly, and in character, refer to what you learned today from others.`,
+        `- Avoid shallow small talk or formal conversation.`,
         `- Only give a reply; no explanations or meta-comments.`,
         `- Do not mention your own name; speak as the villager.`,
         `- If conversation is ongoing, do not greet again.`,
-        `- Answer questions, ask clarifying questions, and evolve the topic.`,
-        `- When the conversation is done, end with exactly "CONVERSATION END".`
+        `- Answer questions, ask clarifying questions, and evolve the topic.`
+        // `- When the conversation is done, end with exactly "CONVERSATION END".`
     ].join('\n')
 
     const input = [`Conversation so far:`,
@@ -60,6 +62,7 @@ async function generateVillagerReply({
         `Please respond. Answer questions, ask clarifying questions, and evolve the topic. Be concise, exchange short phrases:`
     ].join('\n')
 
+    // return "1";
     const response = await client.responses.create({
         model: "gpt-3.5-turbo",
         instructions,
@@ -67,8 +70,8 @@ async function generateVillagerReply({
     });
 
     console.log(`instructions => ${instructions}`);
-    console.log(`input => ${input}`);
-    console.log(`generateVillagerReply => ${name.toUpperCase()}:`, response.output_text);
+    // console.log(`input => ${input}`);
+    // console.log(`generateVillagerReply => ${name.toUpperCase()}:`, response.output_text);
     return response.output_text;
 }
 
